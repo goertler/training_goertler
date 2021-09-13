@@ -1,0 +1,20 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+cntrl + alt + i to create code chunck
+```{r i, echo=FALSE}
+3*3
+
+```
+echo=FALSE, shows the results but not the code
+help --> markdown quick reference 
+```{r}
+
+```
+
