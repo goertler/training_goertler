@@ -227,9 +227,79 @@ i</code></pre>
 <ul>
 <li>reshape data</li>
 </ul>
+<pre class="r"><code>catch_long &lt;- catch_clean %&gt;% 
+  pivot_longer(cols = -c(Region, Year), names_to = &quot;species&quot;, values_to = &quot;catch&quot;)</code></pre>
+<pre class="r"><code>catch_long &lt;- catch_long %&gt;% 
+  rename(catch_thousands = catch) %&gt;% 
+  mutate(catch = catch_thousands *1000)
+
+head(catch_long)</code></pre>
+<pre><code>## # A tibble: 6 × 5
+##   Region  Year species catch_thousands catch
+##   &lt;chr&gt;  &lt;int&gt; &lt;chr&gt;             &lt;int&gt; &lt;dbl&gt;
+## 1 SSE     1886 Chinook               0     0
+## 2 SSE     1886 Sockeye               5  5000
+## 3 SSE     1886 Coho                  0     0
+## 4 SSE     1886 Pink                  0     0
+## 5 SSE     1886 Chum                  0     0
+## 6 SSE     1887 Chinook               0     0</code></pre>
+<ul>
+<li>group and summarize data</li>
+</ul>
+<pre class="r"><code>mean_region &lt;- catch_long %&gt;% 
+  group_by(Region) %&gt;% 
+  summarise(catch_mean = mean(catch), num_obs = n())</code></pre>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre class="r"><code>head(mean_region)</code></pre>
+<pre><code>## # A tibble: 6 × 3
+##   Region catch_mean num_obs
+##   &lt;chr&gt;       &lt;dbl&gt;   &lt;int&gt;
+## 1 ALU        40384.     435
+## 2 BER        16373.     510
+## 3 BRB      2709796.     570
+## 4 CHG       315487.     550
+## 5 CKI       683571.     525
+## 6 COP       179223.     470</code></pre>
+<pre class="r"><code>cv_yr &lt;- catch_long %&gt;% 
+  group_by(Year) %&gt;% 
+  summarise(catch_cv = sd(catch)/mean(catch))</code></pre>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre class="r"><code>head(cv_yr)</code></pre>
+<pre><code>## # A tibble: 6 × 2
+##    Year catch_cv
+##   &lt;int&gt;    &lt;dbl&gt;
+## 1  1878   NaN   
+## 2  1879   NaN   
+## 3  1880   NaN   
+## 4  1881   NaN   
+## 5  1882     3.16
+## 6  1883     2.75</code></pre>
 </div>
 <div id="join-to-regions-definitions" class="section level2">
 <h2>Join to regions definitions</h2>
+<pre class="r"><code>region_defs &lt;- read.csv(&quot;https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1&quot;) %&gt;% 
+    select(code, mgmtArea)
+
+head(region_defs)</code></pre>
+<pre><code>##      code                                  mgmtArea
+## 1     GSE              Unallocated Southeast Alaska
+## 2     NSE                 Northern Southeast Alaska
+## 3     SSE                 Southern Southeast Alaska
+## 4     YAK                                   Yakutat
+## 5 PWSmgmt      Prince William Sound Management Area
+## 6     BER Bering River Subarea Copper River Subarea</code></pre>
+<pre class="r"><code>catch_joined &lt;- left_join(catch_long, region_defs, by = c(&quot;Region&quot; = &quot;code&quot;))
+
+head(catch_joined)</code></pre>
+<pre><code>## # A tibble: 6 × 6
+##   Region  Year species catch_thousands catch mgmtArea                 
+##   &lt;chr&gt;  &lt;int&gt; &lt;chr&gt;             &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;                    
+## 1 SSE     1886 Chinook               0     0 Southern Southeast Alaska
+## 2 SSE     1886 Sockeye               5  5000 Southern Southeast Alaska
+## 3 SSE     1886 Coho                  0     0 Southern Southeast Alaska
+## 4 SSE     1886 Pink                  0     0 Southern Southeast Alaska
+## 5 SSE     1886 Chum                  0     0 Southern Southeast Alaska
+## 6 SSE     1887 Chinook               0     0 Southern Southeast Alaska</code></pre>
 </div>
 
 
