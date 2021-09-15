@@ -1,0 +1,82 @@
+---
+title: "07-functions"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Functions tutorial
+
+## Set up test data
+
+```{r load-data}
+airtemps <- c(212, 30.3, 78, 32)
+
+celsius1 <- (airtemps[1]-32)*5/9
+celsius2 <- (airtemps[2]-32)*5/9
+celsius3 <- (airtemps[3]-32)*5/9
+celsius4 <- (airtemps[4]-32)*5/9
+```
+
+```{r create-function}
+fahr_to_celsius <- function(fahr) {
+  celsius <- (fahr-32)*5/9
+  return(celsius)
+}
+
+celsius5 <- fahr_to_celsius(airtemps[1])
+```
+
+```{r vectorized}
+celsius <- fahr_to_celsius(airtemps)
+celsius
+```
+
+```{r challenge}
+celsius_to_fahr <- function(celsius) {
+  fahr <- (celsius*9/5) + 32
+  return(fahr)
+}
+
+fahr <- celsius_to_fahr(celsius)
+fahr == airtemps
+```
+
+```{r}
+convert_temps <- function(fahr){
+  celsius <- (fahr-32)*5/9
+  kelvin <- celsius + 273.15
+  return(list(fahr=fahr, celsius=celsius, kelvin=kelvin))
+}
+
+temp_df <- data.frame(convert_temps(seq(-100, 100, 10)))
+temp_df
+```
+
+```{r themes}
+custom_theme <- function(base_size = 9) {
+  ggplot2:: theme(
+    axis.ticks = ggplot2:: element_blank(), 
+    text = ggplot2::element_text(family = 'Helvetica', color = 'gray30', size = base_size)
+  )
+}
+
+library(ggplot2)
+
+ggplot(temp_df, mapping = aes(x=fahr, y=celsius, color=kelvin))+
+  geom_point()+
+  custom_theme(10)
+```
+
+```{r}
+scatterplot <- function(df, point_size = 2, font_size=9) {
+  ggplot(df, mapping=aes(x=fahr, y=celsius, color=kelvin)) +
+    geom_point(size=point_size) +
+    custom_theme(font_size)
+}
+
+scatterplot(temp_df, point_size = 3, font_size = 16)
+```
+
