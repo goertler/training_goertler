@@ -15,6 +15,6 @@ cntrl + alt + i to create code chunck
 echo=FALSE, shows the results but not the code
 help --> markdown quick reference 
 ```{r}
-# change  abcdefghijk
+# change  abcdefghijkl
 ```
 
