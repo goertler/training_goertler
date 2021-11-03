@@ -1,0 +1,36 @@
+---
+title: "eml_authoring"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+# creating metadata
+```{r}
+library(EML)
+
+me <- list(givenName = "Pascale",
+            surName = "Goertler")
+me
+
+me <- eml$individualName(givenName = "Pascale",
+                         surName = "Goertler")
+```
+
+# elements of eml data (em/$dataset will check content better than 'list')
+```{r}
+doc <- list(packageId = "dataset-1", 
+            system = "local",
+            dataset = eml$dataset(title = "A minimial valid EML dataset",
+                                  creator = eml$creator(individualName = me),
+                                  contact = eml$contact(individualName = me),
+                                  shortName = "This is not a real element"))
+
+eml_validate(doc) # ID errors/unexpected elements for eml
+write_eml(doc, "./simple_example.xml")
+```
+
