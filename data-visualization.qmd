@@ -2,4 +2,199 @@
 title: "Data Visualization"
 format: html
 ---
+# Library
+```{r}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(forcats) # makes working with factors easier
+library(ggplot2)
+library(leaflet) # interactive maps
+library(DT) # interactive tables
+library(scales) # scale functions for visualization
+library(janitor) # expedite cleaning and exploring data
+library(viridis) # colorblind friendly color pallet
+```
+# Create data
+```{r}
+delta_visits <- read_csv("https://portal.edirepository.org/nis/dataviewer?packageid=edi.587.1&entityid=cda8c1384af0089b506d51ad8507641f") %>% 
+    janitor::clean_names() ## Introducing this new package!
+```
+# Exploring
+```{r}
+glimpse(delta_visits)
+
+range(delta_visits$date)
+
+unique(delta_visits$time_of_day)
+```
+# Getting data ready
+```{r}
+visits_long <- delta_visits %>%
+  pivot_longer(cols = c("sm_boat", "med_boat", "lrg_boat", "bank_angler", "scientist", "cars"),
+                 names_to = "visitor_type",
+                 values_to = "quantity") %>%
+    rename(restore_loc = eco_restore_approximate_location) %>% 
+    select(-notes) 
+```
+# plotting with ggplot2
+```{r}
+ggplot(visits_long,
+       aes(x = restore_loc, y = quantity)) +
+  geom_col()
+```
+# calculating daily visits by visit type
+```{r}
+daily_visits <- visits_long %>%
+  group_by(restore_loc, date, visitor_type) %>%
+  summarise(daily_visits = sum(quantity))
+```
+# customize plot
+```{r}
+ggplot(daily_visits,
+       aes(x = restore_loc, y = daily_visits))+
+  geom_col(fill = "blue")
+```
+
+```{r}
+ggplot(daily_visits,
+       aes(x = restore_loc, y = daily_visits, fill = visitor_type))+
+  geom_col() +
+  labs(x = "Restoration Location", 
+       y = "Number of visits",
+       fill = "Type of visitor",
+       title = "Total number of visits to Delta Restoration Sites", 
+       subtitle = "Sum of all visits during study period") +
+  coord_flip() +
+  theme_bw()
+```
+
+# using custom theme
+```{r}
+ggplot(daily_visits,
+       aes(x = restore_loc, y = daily_visits, fill = visitor_type))+
+  geom_col() +
+  labs(x = "Restoration Location", 
+       y = "Number of visits",
+       fill = "Type of visitor",
+       title = "Total number of visits to Delta Restoration Sites", 
+       subtitle = "Sum of all visits during study period") +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom", axis.text.y = element_blank())
+```
+
+# saving theme into an object
+```{r}
+my_theme <- theme_bw(base_size = 16) +
+  theme(legend.position = "bottom",
+                  axis.ticks.y = element_blank())
+
+ggplot(daily_visits,
+       aes(x = restore_loc, y = daily_visits, fill = visitor_type))+
+  geom_col() +
+  labs(x = "Restoration Location", 
+       y = "Number of visits",
+       fill = "Type of visitor",
+       title = "Total number of visits to Delta Restoration Sites", 
+       subtitle = "Sum of all visits during study period") +
+  coord_flip() +
+  my_theme +
+  scale_y_continuous(seq(0,120,20))
+```
+# adding sorting variable
+```{r}
+daily_visits_total <- daily_visits %>%
+  group_by(restore_loc) %>%
+  mutate(n = sum(daily_visits)) %>%
+  ungroup()
+```
+
+```{r}
+
+ggplot(daily_visits_total,
+       aes(x = fct_reorder(restore_loc, n), y = daily_visits, fill = visitor_type))+
+  geom_col() +
+  labs(x = "Restoration Location", 
+       y = "Number of visits",
+       fill = "Type of visitor",
+       title = "Total number of visits to Delta Restoration Sites", 
+       subtitle = "Sum of all visits during study period") +
+  coord_flip() +
+  my_theme +
+  scale_fill_viridis_d()
+```
+
+```{r}
+ggsave("figures/visits_restored_site_delta.png", width = 11, height = 8, units = "in") # default is to save last plot made
+```
+
+```{r}
+facet_plot <- ggplot(data = daily_visits_total,
+       aes(x = visitor_type, y = daily_visits,
+           fill = visitor_type))+
+    geom_col()+
+    theme_bw()+
+    facet_wrap(~restore_loc,
+               scales = "free_y",
+               ncol = 5,
+               nrow = 2)+
+    scale_fill_viridis_d()+
+    labs(x = "Type of visitor",
+         y = "Number of Visits",
+         title = "Total Number of Visits to Delta Restoration Areas",
+         subtitle = "Sum of all visits during study period")+
+    theme_bw()+
+    theme(legend.position = "bottom",
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank())
+
+facet_plot
+```
+
+# interactive tables with 'DT'
+```{r}
+locations <- visits_long %>%
+    distinct(restore_loc, .keep_all = T) %>%
+    select(restore_loc, latitude, longitude)
+
+head(locations)
+datatable(locations)
+```
+
+# interactive mpas with 'leaflet'
+```{r}
+leaflet(locations) %>%
+    addTiles() %>%
+    addMarkers(
+        lng = ~ longitude,
+        lat = ~ latitude,
+        popup = ~ restore_loc
+    )
+```
+
+```{r}
+leaflet(locations) %>%
+    addWMSTiles(
+        "https://basemap.nationalmap.gov/arcgis/services/USGSImageryTopo/MapServer/WmsServer",
+        layers = "0",
+        options = WMSTileOptions(format = "image/png", transparent = TRUE)) %>%
+    addWMSTiles(
+        "https://basemap.nationalmap.gov/arcgis/services/USGSHydroCached/MapServer/WmsServer",
+        layers = "0",
+        options = WMSTileOptions(format = "image/png", transparent = TRUE)) %>%
+    addCircleMarkers(
+        lng = ~ longitude,
+        lat = ~ latitude,
+        popup = ~ restore_loc,
+        radius = 5,
+        # set fill properties
+        fillColor = "salmon",
+        fillOpacity = 1,
+        # set stroke properties
+        stroke = T,
+        weight = 0.5,
+        color = "white",
+        opacity = 1)
+```
 
