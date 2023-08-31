@@ -1,0 +1,12 @@
+---
+title: "data-access"
+format: html
+---
+
+# Reproducible Data Access 
+
+```{r}
+library(readr)
+library(pins)
+```
+

@@ -1,0 +1,75 @@
+---
+title: "Census Data"
+format: html
+---
+
+```{r}
+library(tidycensus)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+census_api_key("53e44a07fe4484c7b7d6867a542f5d53c7863297", install = TRUE)
+```
+
+```{r}
+readRenviron("~/.Renviron")
+```
+
+# decennial pop by state
+
+```{r}
+pop_2020 <- get_decennial(
+    geography = "state",
+    variable = "P1_001N",
+    year = 2020)
+```
+
+```{r}
+pop_2010 <- get_decennial(
+  geography = "state", 
+  variables = "P001001",
+  year = 2010)
+```
+
+# getting table P2
+```{r}
+table_p2_2020 <- get_decennial(
+    geography = "state",
+    table = "P2",
+    year = 2020)
+
+unique(table_p2_2020$variable)
+```
+
+```{r}
+vars_pl_2020 <-  load_variables(2020, "pl")
+
+vars_dhc_2020 <-  load_variables(2020, "dhc")
+
+## for 20210
+vars_pl_2010 <-  load_variables(2010, "pl")
+```
+
+```{r}
+vars_dhc_2020 <-  load_variables(2020, "dhc")
+
+## Note you have to specify the file with sumfile =
+household_2020 <- get_decennial(
+    geography = "state",
+    variable = "H10_001N",
+    year = 2020,
+    sumfile = "dhc")
+```
+
+```{r}
+delta_hisp <- get_decennial(
+    geography = "county",
+    state = "CA",
+    county = c("Alameda", "Contra Costa", "Sacramento", "San Joaquin", "Solano", "Yolo"),
+  variables = "P2_002N",
+  year = 2020)
+```
+

@@ -1,0 +1,206 @@
+---
+title: "Wrangling-and-cleaning"
+author: "Pascale"
+format: html
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(readr)
+```
+
+bit.ly/data-wrangle-lesson-data
+
+```{r}
+catch_original <- read_csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.302.1")
+```
+
+```{r}
+colnames(catch_original)
+
+head(catch_original)
+
+summary(catch_original)
+
+unique(catch_original$Region)
+
+# View(catch_original) 
+# can't leave it here, better in Console, will create an error in .qmd
+
+```
+# pipe operator
+GOAL: remove 'All' and 'notesRegCode'
+
+```{r}
+catch_data <- catch_original %>%
+  select("Region", "Year", "Chinook", "Sockeye", "Coho", "Pink", "Chum")
+```
+
+```{r}
+catch_data_2 <- catch_original %>% select(-All, -notesRegCode)
+```
+
+```{r}
+dplyr::glimpse(catch_data)
+```
+# change column content
+GOAL: convert the Chinook catch values to 'numeric' and overwrite the old Chinook column
+
+```{r}
+catch_clean <- catch_data %>%
+  mutate(Chinook = as.numeric(Chinook))
+
+dplyr::glimpse(catch_clean)
+```
+# find the row with 'NA' value
+
+```{r}
+which(is.na(catch_clean$Chinook))
+```
+```{r}
+i <- catch_clean %>% 
+  select(Chinook) %>% 
+  is.na() %>%
+  which() 
+
+i 
+```
+```{r}
+catch_data[i,]
+```
+
+GOAL: change the value(s) of the 'Chinook' column to 1 if the value is equal to the letter i
+
+```{r}
+catch_clean <- catch_data %>% 
+  mutate(Chinook = 
+           if_else(condition = Chinook == "I", 
+                   true = "1",
+                   false = Chinook))
+
+catch_clean[i,]
+```
+
+# add step to deal with string (character values in Chinook column)
+```{r}
+catch_clean <- catch_data %>% 
+  mutate(Chinook = 
+           if_else(condition = Chinook == "I", 
+                   true = "1",
+                   false = Chinook),
+         Chinook = as.numeric(Chinook))
+```
+
+## 'pivot_longer()
+
+GOAL: transform data from wide format to a long format
+
+```{r}
+catch_long <- 
+  catch_clean %>% 
+  pivot_longer(
+    cols = -c(Region, Year),
+    names_to = "species",
+    values_to = "catch"
+  )
+```
+
+```{r}
+catch_long %>% 
+  pivot_wider(names_from = species,
+              values_from = catch)
+```
+
+## renaming columns
+GOAL: rename 'catch' column to be called 'catch_thousands'
+```{r}
+catch_long <- catch_long %>% 
+  rename(catch_thousands = catch)
+```
+
+## adding columns with 'mutate()'
+
+GOAL: create a column 'catch' with units of fish, instead of thousands of fish
+
+```{r}
+catch_long <- catch_long %>% 
+  mutate(catch = catch_thousands *1000)
+```
+
+GOAL: remove 'catch_thousands' column
+```{r}
+catch_long <- catch_long %>% 
+  select(-catch_thousands)
+
+head(catch_long)
+```
+
+# summary statistics
+GOAL: getting the average catch per region
+
+bit.ly/3ppGUsQ # diagram
+
+```{r}
+mean_region <- catch_long %>% 
+  group_by(Region) %>% 
+  summarize(mean_catch = mean(catch))
+
+head(mean_region)
+  
+```
+
+## 'filter()'
+
+GOAL: go back to our 'catch_long' data and select all rows from the SSE region
+
+```{r}
+sse_catch <- catch_long %>% 
+  filter(Region == "SSE")
+
+head(sse_catch)
+```
+
+Quick exercise:
+
+1. filter to catches over one million fish
+2. select rows from the SSE region that have information about Chinook salmon
+
+```{r}
+catch_long %>% 
+  filter(catch > 100000)
+```
+
+```{r}
+catch_long %>% 
+  filter(Region == "SSE" & species == "Chinook")
+```
+# sorting data
+
+GOAL: re-calculate mean catch by region, and then sort the output by mean catch
+```{r}
+mean_region <- catch_long  %>% 
+  group_by(Region) %>% 
+  summarize(mean_catch = mean(catch)) %>% 
+  arrange(desc(mean_catch))
+
+head(mean_region)
+```
+# 'separate()' and 'unite()'
+
+```{r}
+sites_df <- data.frame(site = c("HAW-101",
+                                "HAW-103",
+                                "OAH-320",
+                                "OAH-219",
+                                "MAI-039"))
+
+df <- sites_df %>% 
+  separate(site, c("island", "site_number"), "-")
+```
+
+```{r}
+df %>% 
+  unite(code, island, site_number, sep = "-")
+```
+

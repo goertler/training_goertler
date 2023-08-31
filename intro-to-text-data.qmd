@@ -1,0 +1,120 @@
+---
+title: "tidy text"
+format: html
+---
+
+```{r}
+library(gutenbergr) # access public domain texts from Project Gutenberg
+library(tidytext) # text mining using tidy tools
+library(dplyr) # wrangle data
+library(ggplot2) # plot data
+```
+
+```{r}
+# Group C
+gutenberg_works(title == "The Strange Case of Dr. Jekyll and Mr. Hyde") # jekyll hyde text
+```
+
+```{r}
+Jekyll_corp <- gutenberg_download(42)
+```
+
+```{r}
+# tidy text data - unnest and remove stop words
+tidy_Jekyll <- Jekyll_corp %>% 
+    unnest_tokens(word, text)
+```
+
+```{r}
+# remove stop words
+tidy_Jekyll <- tidy_Jekyll %>% dplyr::anti_join(stop_words, by = "word")
+```
+
+```{r}
+# calculate top 10 most frequent words
+count_Jekyll <- tidy_Jekyll %>%
+    count(word) %>% 
+    slice_max(n = 10, order_by = n)
+```
+
+```{r}
+# bar plot
+ggplot(data = count_Jekyll, aes(n, reorder(word, n))) +
+  geom_col() +
+    labs(x = "Count",
+         y = "Token")
+```
+
+```{r}
+# initial lollipop plot
+ggplot(data = count_Jekyll, aes(x=word, y=n)) +
+    geom_point() +
+    geom_segment(aes(x=word, xend=word, y=0, yend=n)) +
+    coord_flip() +
+    labs(x = "Token",
+         y = "Count")
+
+# ascending order pretty lollipop plot
+ggplot(data = count_Jekyll, aes(x=reorder(word, n), y=n)) +
+    geom_point(color="cyan4") +
+    geom_segment(aes(x=word, xend=word, y=0, yend=n), color="cyan4") +
+    coord_flip() +
+    labs(title = "The Strange Case of Dr. Jekyll and Mr. Hyde",
+         x = NULL,
+         y = "Count") +
+    theme_minimal() +
+    theme(
+        panel.grid.major.y = element_blank()
+    )
+```
+
+# explore unstructured text
+
+```{r}
+library(tidytext) # tidy text tools
+library(quanteda) # create a corpus
+library(pdftools) # read in data
+library(dplyr) # wrangle data
+library(stringr) # string manipulation
+library(ggplot2) # plots
+library(wordcloud)
+```
+
+```{r}
+# ch 6
+path_df <- "https://deltacouncil.ca.gov/pdf/delta-plan/2013-ch-06.pdf"
+dp_ch6 <- pdftools::pdf_text(path_df)
+```
+
+```{r}
+corpus_dp_ch <- quanteda::corpus(dp_ch6)
+summary(corpus_dp_ch)
+```
+
+```{r}
+tidy_dp_ch6 <- tidytext::tidy(corpus_dp_ch)
+```
+
+```{r}
+token_dp_ch6 <- tidy_dp_ch6 %>% 
+    unnest_tokens(word, text)
+```
+
+```{r}
+tidy_dp_ch6_sw <- token_dp_ch6 %>% dplyr::anti_join(stop_words, by = "word")
+```
+
+```{r}
+count_dp_ch6 <- tidy_dp_ch6_sw %>%
+    count(word) %>% 
+    slice_max(n = 10, order_by = n)
+```
+
+```{r}
+# wordcloud
+wordcloud(words = count_dp_ch6$word,
+          freq = count_dp_ch6$n)
+
+# look at headers, and remove those words (to focus on content)?
+```
+

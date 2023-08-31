@@ -1,0 +1,88 @@
+---
+title: "reproducible survey"
+format: html
+---
+
+```{r}
+library(qualtRics)
+library(tidyr)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(dplyr)
+```
+
+```{r}
+qualtrics_api_credentials(api_key = "", base_url = "ucsb.co1.qualtrics.com", install = TRUE, overwrite = T)
+
+# check email for key (cannot be included in public version)
+```
+
+
+```{r}
+surveys <- all_surveys()
+kable(surveys) %>%
+    kable_styling()
+```
+
+```{r}
+i <- which(surveys$name == "Survey for Data Science Training")
+id <- surveys$id[i]
+```
+
+```{r}
+questions <- survey_questions(id)
+kable(questions) %>%
+    kable_styling()
+```
+
+```{r}
+survey_results <- fetch_survey(id)
+```
+
+```{r}
+q2 <- survey_results %>% 
+    select(Q2) %>% 
+    group_by(Q2) %>% 
+    summarise(n = n())
+
+kable(q2, col.names = c("How long have you been programming?",
+                        "Number of responses")) %>%
+    kable_styling()
+```
+
+```{r}
+q3 <- survey_results %>% 
+    select(Q3) %>% 
+    group_by(Q3) %>% 
+    summarise(n = n())
+```
+
+```{r}
+ggplot(data = q3, 
+       mapping = aes(x = Q3, y = n)) +
+    geom_col() +
+    labs(x = "What language do you currently use most frequently?", y = "Number of reponses") +
+    theme_minimal()
+```
+
+```{r}
+q3_text <- survey_results %>% 
+    select(Q3_7_TEXT) %>% 
+    drop_na()
+
+kable(q3_text, col.names = c("Other responses to 'What language do you currently use mose frequently?'")) %>% 
+    kable_styling()
+```
+
+
+```{r}
+q4 <- survey_results %>% 
+    select(Q4) %>% 
+    rename(`What data science tool or language are you most excited to learn next?` = Q4) %>% 
+    drop_na()
+
+kable(q4, col.names = "What data science tool or language are you most excited to learn next?") %>% 
+  kable_styling()
+```
+
